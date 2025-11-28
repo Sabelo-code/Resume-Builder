@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Resume Builder (Single File)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <style>
+    /* ====== Base and Layout ====== */
+    :root{
+      --bg:#0f1115;
+      --panel:#171a21;
+      --muted:#9aa3b2;
+      --text:#e7eaf0;
+      --primary:#6bc2ff;
+      --primary-2:#388ee8;
+      --accent:#9b7dff;
+      --success:#27c49f;
+      --danger:#ff6b6b;
+      --border:#242834;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(120deg,#0c0e13,#121621 60%,#0e1220);
+      color:var(--text);
+    }
+    a{color:var(--primary)}
+    .container{
+      max-width:1200px;
+      margin:0 auto;
+      padding:24px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .header h1{
+      font-size:20px;
+      margin:0;
+      letter-spacing:0.2px;
+    }
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .hidden{display:none !important}
+
+    /* ====== Controls ====== */
+    label{font-size:12px; color:var(--muted)}
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#0f1218;
+      color:var(--text);
+      outline:none;
+    }
+    textarea{min-height:100px; resize:vertical}
+    .btn{
+      padding:10px 14px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#121520;
+      color:var(--text);
+      cursor:pointer;
+      transition:all .15s ease;
+    }
+    .btn:hover{transform:translateY(-1px); background:#141828}
+    .btn-primary{background:linear-gradient(180deg,var(--primary),var(--primary-2)); border:none; color:#0a0c10}
+    .btn-success{background:linear-gradient(180deg,#33e1b0,#1cbf92); border:none; color:#07110d}
+    .btn-danger{background:linear-gradient(180deg,#ffa4a4,#ff6b6b); border:none; color:#2c0a0a}
+    .btn-ghost{background:#0f1218}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px; border:1px solid var(--border);
+      background:#10131a; font-size:12px; color:var(--muted)
+    }
+
+    /* Tabs */
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+    .tab{padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer; font-size:13px; background:#0f1218}
+    .tab.active{background:#1a1f2c; border-color:#2a3246}
+
+    /* List and Items */
+    .items{display:flex; flex-direction:column; gap:10px}
+    .item{
+      display:grid; gap:10px;
+      grid-template-columns: repeat(2, 1fr);
+      background:#10131a; border:1px solid var(--border); border-radius:10px; padding:10px;
+    }
+    .item .full{grid-column:1/-1}
+
+    /* ====== Preview Templates ====== */
+    .preview{
+      background:#ffffff; color:#111; border-radius:10px; overflow:hidden; border:1px solid #ddd;
+    }
+    .preview-inner{padding:24px}
+    .tpl-modern .name{font-size:28px; font-weight:700}
+    .tpl-modern .title{color:#555; margin-bottom:8px}
+    .tpl-modern h3{margin:16px 0 8px 0; border-bottom:2px solid #eee; padding-bottom:6px}
+    .tpl-modern ul{padding-left:18px}
+    .tpl-modern .section{margin-bottom:12px}
+
+    .tpl-professional{font-family:Georgia,serif}
+    .tpl-professional .name{font-size:26px; font-weight:700; letter-spacing:0.5px}
+    .tpl-professional .title{font-style:italic; color:#333}
+    .tpl-professional h3{margin:16px 0 4px 0; color:#222}
+    .tpl-professional .section{border-left:3px solid #333; padding-left:10px; margin:12px 0}
+    .tpl-professional ul{padding-left:18px}
+
+    .tpl-creative{font-family:"Trebuchet MS",sans-serif}
+    .tpl-creative .header{
+      display:flex; align-items:center; gap:12px; margin-bottom:8px
+    }
+    .tpl-creative .avatar{
+      width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,#9b7dff,#6bc2ff)
+    }
+    .tpl-creative .name{font-size:24px; font-weight:800}
+    .tpl-creative .title{color:#444}
+    .tpl-creative h3{margin:14px 0 6px 0; color:#3a3a3a}
+    .tpl-creative .section{background:#f7f7ff; padding:10px; border-radius:8px; margin:10px 0}
+    .tpl-creative ul{padding-left:18px}
+
+    /* ====== Auth ====== */
+    .auth{
+      max-width:520px; margin:80px auto; text-align:center
+    }
+    .auth .panel{padding:24px}
+    .auth h1{margin-top:0}
+
+    /* Footer */
+    footer{margin-top:18px; text-align:center; color:#7d8595; font-size:12px}
+    
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ====== Auth (Login/Register) ====== -->
+    <section id="authSection" class="auth">
+      <div class="panel">
+        <h1>Resume Builder</h1>
+        <p class="muted">Secure your work with lightweight, offline persistence.</p>
+        <div class="tabs" id="authTabs">
+          <div class="tab active" data-tab="login">Login</div>
+          <div class="tab" data-tab="register">Register</div>
+        </div>
+        <div id="loginForm">
+          <div class="items">
+            <div>
+              <label>Username</label>
+              <input id="loginUsername" placeholder="yourname" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input id="loginPassword" type="password" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn btn-primary" id="loginBtn">Login</button>
+            <span class="muted" id="authMsg"></span>
+          </div>
+        </div>
+        <div id="registerForm" class="hidden">
+          <div class="items">
+            <div>
+              <label>Username</label>
+              <input id="regUsername" placeholder="yourname" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input id="regPassword" type="password" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn btn-success" id="registerBtn">Create account</button>
+            <span class="muted" id="regMsg"></span>
+          </div>
+        </div>
+      </div>
+      <footer>Data is stored locally on your browser. No external libraries required.</footer>
+    </section>
+
+    <!-- ====== Dashboard ====== -->
+    <section id="dashboardSection" class="container hidden">
+      <div class="header">
+        <h1>Dashboard</h1>
+        <div class="row">
+          <span id="currentUser" class="chip"></span>
+          <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Builder -->
+        <div class="panel">
+          <div class="header">
+            <h1>CV Builder</h1>
+            <div class="row">
+              <select id="templateSelect" class="chip">
+                <option value="tpl-modern">Modern</option>
+                <option value="tpl-professional">Professional</option>
+                <option value="tpl-creative">Creative</option>
+              </select>
+              <button class="btn" id="newCvBtn">New CV</button>
+              <button class="btn btn-success" id="saveCvBtn">Save CV</button>
+              <button class="btn btn-primary" id="downloadCvBtn">Download PDF</button>
+              <span class="chip">Downloads: <span id="downloadCount">0</span></span>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs" id="formTabs">
+            <div class="tab active" data-tab="personal">Personal</div>
+            <div class="tab" data-tab="skills">Skills</div>
+            <div class="tab" data-tab="experience">Experience</div>
+            <div class="tab" data-tab="education">Education</div>
+            <div class="tab" data-tab="optional">Optional</div>
+            <div class="tab" data-tab="ai">Smart AI</div>
+          </div>
+
+          <!-- Forms -->
+          <div id="formSection">
+            <!-- Personal -->
+            <div id="tab-personal">
+              <div class="items">
+                <div>
+                  <label>Full name</label>
+                  <input id="f_name" placeholder="Jane Doe">
+                </div>
+                <div>
+                  <label>Professional title</label>
+                  <input id="f_title" placeholder="Senior Software Engineer">
+                </div>
+                <div>
+                  <label>Summary</label>
+                  <textarea id="f_summary" placeholder="Brief professional summary"></textarea>
+                </div>
+                <div class="item">
+                  <div>
+                    <label>Email</label>
+                    <input id="f_email" placeholder="jane@example.com">
+                  </div>
+                  <div>
+                    <label>Phone</label>
+                    <input id="f_phone" placeholder="+27 00 000 0000">
+                  </div>
+                  <div>
+                    <label>Location</label>
+                    <input id="f_location" placeholder="Durban, South Africa">
+                  </div>
+                  <div>
+                    <label>LinkedIn / Portfolio</label>
+                    <input id="f_links" placeholder="linkedin.com/in/jane • janedoe.dev">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skills -->
+            <div id="tab-skills" class="hidden">
+              <div class="row">
+                <input id="skillInput" placeholder="Add a skill and press +">
+                <button class="btn" id="addSkillBtn">+</button>
+                <button class="btn btn-ghost" id="clearSkillsBtn">Clear</button>
+              </div>
+              <div id="skillsList" class="row" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Experience -->
+            <div id="tab-experience" class="hidden">
+              <div class="row">
+                <button class="btn" id="addExpBtn">Add experience</button>
+              </div>
+              <div id="expList" class="items" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Education -->
+            <div id="tab-education" class="hidden">
+              <div class="row">
+                <button class="btn" id="addEduBtn">Add education</button>
+              </div>
+              <div id="eduList" class="items" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Optional -->
+            <div id="tab-optional" class="hidden">
+              <div class="row">
+                <button class="btn" id="addProjBtn">Add project</button>
+                <button class="btn" id="addCertBtn">Add certification</button>
+                <button class="btn" id="addLangBtn">Add language</button>
+              </div>
+              <div id="projList" class="items" style="margin-top:8px"></div>
+              <div id="certList" class="items" style="margin-top:8px"></div>
+              <div id="langList" class="row" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Smart AI -->
+            <div id="tab-ai" class="hidden">
+              <div class="items">
+                <div class="full">
+                  <label>Job description</label>
+                  <textarea id="jobDesc" placeholder="Paste the job description here"></textarea>
+                </div>
+                <div class="row">
+                  <button class="btn btn-primary" id="aiGenerateBtn">Generate tailored content</button>
+                  <button class="btn btn-ghost" id="aiEnhanceSkillsBtn">Enhance skills</button>
+                  <span class="muted">All generated content is editable.</span>
+                </div>
+                <div class="items" style="margin-top:8px">
+                  <div class="full">
+                    <label>Suggested summary</label>
+                    <textarea id="aiSummaryOut"></textarea>
+                  </div>
+                  <div class="full">
+                    <label>Suggested achievement bullets (for selected experience)</label>
+                    <textarea id="aiBulletsOut"></textarea>
+                  </div>
+                  <div class="full">
+                    <label>Suggested keywords</label>
+                    <textarea id="aiKeywordsOut"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Preview -->
+        <div class="panel">
+          <div class="header">
+            <h1>Live preview</h1>
+            <span class="muted">Switch templates to compare styles</span>
+          </div>
+          <div id="preview" class="preview tpl-modern">
+            <div class="preview-inner" id="previewInner">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved CVs -->
+      <div class="panel" style="margin-top:16px">
+        <div class="header">
+          <h1>Saved CVs</h1>
+          <span class="muted">Edit, download, or delete</span>
+        </div>
+        <div id="savedList" class="items"></div>
+      </div>
+
+      <footer>Pro tip: Save different resume versions for each role you apply to.</footer>
+    </section>
+  </div>
+
+  <script>
+    /* ====== Utilities & State ====== */
+    const $ = (q) => document.querySelector(q);
+    const $$ = (q) => Array.from(document.querySelectorAll(q));
+    const state = {
+      user:null,
+      template:'tpl-modern',
+      downloadCount:0,
+      cv:{
+        personal:{ name:'', title:'', summary:'', email:'', phone:'', location:'', links:'' },
+        skills:[],
+        experience:[],
+        education:[],
+        projects:[],
+        certifications:[],
+        languages:[]
+      }
+    };
+
+    const LS = {
+      usersKey:'rb_users',
+      sessionKey:'rb_session',
+      cvsKey:(u)=>`rb_${u}_cvs`,
+      downloadsKey:(u)=>`rb_${u}_downloads`,
+      get(k, d=null){ try{ const v = localStorage.getItem(k); return v?JSON.parse(v):d }catch(e){ return d } },
+      set(k, v){ localStorage.setItem(k, JSON.stringify(v)) }
+    };
+
+    /* ====== CONFIG: Paste your Apps Script web app URL here (server-side) ======
+       Example: const AI_PROXY_URL = 'https://script.google.com/macros/s/AKfycbx.../exec';
+       Do NOT put API keys in this file. Keep keys in your Apps Script.
+    */
+    const AI_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyM2cmcZQxr2V1KkK28sxXh3wTEOYXZPjoJwRyW8ZuUojWtOomx8rj0fRxycviUfvsY2Q/exec'; // <<< PASTE YOUR APPSCRIPT WEB APP URL HERE >>>
+
+    /* ====== Auth Tabs ====== */
+    const authTabs = $('#authTabs');
+    authTabs.addEventListener('click', (e)=>{
+      const t = e.target.closest('.tab'); if(!t) return;
+      $$('.auth .tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const tab = t.dataset.tab;
+      $('#loginForm').classList.toggle('hidden', tab!=='login');
+      $('#registerForm').classList.toggle('hidden', tab!=='register');
+    });
+
+    /* ====== Auth Logic ====== */
+    function initAuth(){
+      const session = LS.get(LS.sessionKey);
+      if(session && session.user){
+        state.user = session.user;
+        showDashboard();
+      } else {
+        $('#authSection').classList.remove('hidden');
+        $('#dashboardSection').classList.add('hidden');
+      }
+    }
+
+    $('#registerBtn').addEventListener('click', ()=>{
+      const u = $('#regUsername').value.trim();
+      const p = $('#regPassword').value.trim();
+      if(!u || !p){ $('#regMsg').textContent = 'Please provide username and password.'; return; }
+      const users = LS.get(LS.usersKey, {});
+      if(users[u]){ $('#regMsg').textContent = 'Username already exists.'; return; }
+      users[u] = { password:p };
+      LS.set(LS.usersKey, users);
+      $('#regMsg').textContent = 'Account created. You can login now.';
+      $('#authTabs .tab[data-tab="login"]').click();
+    });
+
+    $('#loginBtn').addEventListener('click', ()=>{
+      const u = $('#loginUsername').value.trim();
+      const p = $('#loginPassword').value.trim();
+      const users = LS.get(LS.usersKey, {});
+      if(users[u]?.password === p){
+        state.user = u;
+        LS.set(LS.sessionKey, { user:u });
+        showDashboard();
+      } else {
+        $('#authMsg').textContent = 'Invalid credentials.';
+      }
+    });
+
+    $('#logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem(LS.sessionKey);
+      state.user = null;
+      $('#dashboardSection').classList.add('hidden');
+      $('#authSection').classList.remove('hidden');
+    });
+
+    function showDashboard(){
+      $('#authSection').classList.add('hidden');
+      $('#dashboardSection').classList.remove('hidden');
+      $('#currentUser').textContent = state.user;
+      state.downloadCount = LS.get(LS.downloadsKey(state.user), 0) || 0;
+      $('#downloadCount').textContent = state.downloadCount;
+      const saved = LS.get(LS.cvsKey(state.user), []);
+      renderSaved(saved);
+      loadTemplatePreference();
+      renderPreview();
+    }
+
+    /* ====== Tabs in Builder ====== */
+    const formTabs = $('#formTabs');
+    formTabs.addEventListener('click', (e)=>{
+      const t = e.target.closest('.tab'); if(!t) return;
+      $$('#formTabs .tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const tab = t.dataset.tab;
+      ['personal','skills','experience','education','optional','ai'].forEach(id=>{
+        document.getElementById('tab-'+id).classList.toggle('hidden', id!==tab);
+      });
+    });
+
+    /* ====== Template Switching & Persistence ====== */
+    function loadTemplatePreference(){
+      const saved = LS.get(`rb_${state.user}_tpl`, 'tpl-modern');
+      state.template = saved;
+      $('#templateSelect').value = saved;
+      setTemplate(saved);
+    }
+    function setTemplate(t){
+      state.template = t;
+      $('#preview').className = 'preview '+t;
+      LS.set(`rb_${state.user}_tpl`, t);
+      renderPreview();
+    }
+    $('#templateSelect').addEventListener('change', (e)=> setTemplate(e.target.value));
+
+    /* ====== Skills ====== */
+    $('#addSkillBtn').addEventListener('click', ()=>{
+      const v = $('#skillInput').value.trim();
+      if(!v) return;
+      state.cv.skills.push(v);
+      $('#skillInput').value='';
+      renderSkills();
+      renderPreview();
+    });
+    $('#clearSkillsBtn').addEventListener('click', ()=>{
+      state.cv.skills = [];
+      renderSkills(); renderPreview();
+    });
+    function renderSkills(){
+      const wrap = $('#skillsList'); wrap.innerHTML='';
+      state.cv.skills.forEach((s, i)=>{
+        const chip = document.createElement('div');
+        chip.className='chip';
+        chip.innerHTML = `${s} <button class="btn btn-danger" style="padding:2px 6px" data-i="${i}">x</button>`;
+        chip.querySelector('button').addEventListener('click', (e)=>{
+          const idx = +e.target.dataset.i; state.cv.skills.splice(idx,1);
+          renderSkills(); renderPreview();
+        });
+        wrap.appendChild(chip);
+      });
+    }
+
+    /* ====== Experience ====== */
+    $('#addExpBtn').addEventListener('click', ()=> addExperience());
+    function addExperience(exp={
+      role:'', company:'', start:'', end:'', bullets:['']
+    }){
+      state.cv.experience.push(exp);
+      renderExperience();
+      renderPreview();
+    }
+    function renderExperience(){
+      const list = $('#expList'); list.innerHTML='';
+      state.cv.experience.forEach((exp, idx)=>{
+        const el = document.createElement('div');
+        el.className='item';
+        el.innerHTML=`
+          <div>
+            <label>Role</label>
+            <input value="${escapeHtml(exp.role)}" data-f="role">
+          </div>
+          <div>
+            <label>Company</label>
+            <input value="${escapeHtml(exp.company)}" data-f="company">
+          </div>
+          <div>
+            <label>Start</label>
+            <input value="${escapeHtml(exp.start)}" data-f="start">
+          </div>
+          <div>
+            <label>End</label>
+            <input value="${escapeHtml(exp.end)}" data-f="end">
+          </div>
+          <div class="full">
+            <label>Bullets</label>
+            <div class="items" id="bullets-${idx}"></div>
+            <div class="row" style="margin-top:6px">
+              <button class="btn" data-act="addBullet">Add bullet</button>
+              <button class="btn btn-danger" data-act="removeExp">Remove experience</button>
+            </div>
+          </div>
+        `;
+        // inputs
+        el.querySelectorAll('input').forEach(inp=>{
+          inp.addEventListener('input', (e)=>{
+            const f = e.target.dataset.f;
+            state.cv.experience[idx][f] = e.target.value;
+            renderPreview();
+          });
+        });
+        // bullets list
+        const bl = el.querySelector(`#bullets-${idx}`);
+        bl.innerHTML='';
+        exp.bullets.forEach((b, bi)=>{
+          const row = document.createElement('div');
+          row.className='row';
+          row.innerHTML=`
+            <input class="full" value="${escapeHtml(b)}" />
+            <button class="btn btn-danger" data-bi="${bi}">Remove</button>
+          `;
+          row.querySelector('input').addEventListener('input', (e)=>{
+            state.cv.experience[idx].bullets[bi] = e.target.value; renderPreview();
+          });
+          row.querySelector('button').addEventListener('click', (e)=>{
+            const i = +e.target.dataset.bi;
+            state.cv.experience[idx].bullets.splice(i,1);
+            renderExperience(); renderPreview();
+          });
+          bl.appendChild(row);
+        });
+        // actions
+        el.querySelector('[data-act="addBullet"]').addEventListener('click', ()=>{
+          state.cv.experience[idx].bullets.push(''); renderExperience();
+        });
+        el.querySelector('[data-act="removeExp"]').addEventListener('click', ()=>{
+          state.cv.experience.splice(idx,1); renderExperience(); renderPreview();
+        });
+        list.appendChild(el);
+      });
+    }
+
+    /* ====== Education ====== */
+    $('#addEduBtn').addEventListener('click', ()=> addEducation());
+    function addEducation(ed={ degree:'', institution:'', year:'', details:'' }){
+      state.cv.education.push(ed);
+      renderEducation(); renderPreview();
+    }
+    function renderEducation(){
+      const list = $('#eduList'); list.innerHTML='';
+      state.cv.education.forEach((ed, idx)=>{
+        const el = document.createElement('div');
+        el.className='item';
+        el.innerHTML=`
+          <div>
+            <label>Degree</label>
+            <input value="${escapeHtml(ed.degree)}" data-f="degree">
+          </div>
+          <div>
+            <label>Institution</label>
+            <input value="${escapeHtml(ed.institution)}" data-f="institution">
+          </div>
+          <div>
+            <label>Year</label>
+            <input value="${escapeHtml(ed.year)}" data-f="year">
+          </div>
+          <div class="full">
+            <label>Details</label>
+            <input value="${escapeHtml(ed.details)}" data-f="details">
+          </div>
+          <div class="row">
+            <button class="btn btn-danger" data-act="removeEdu">Remove</button>
+          </div>
+        `;
+        el.querySelectorAll('input').forEach(inp=>{
+          inp.addEventListener('input', (e)=>{
+            const f = e.target.dataset.f;
+            state.cv.education[idx][f] = e.target.value;
+            renderPreview();
+          });
+        });
+        el.querySelector('[data-act="removeEdu"]').addEventListener('click', ()=>{
+          state.cv.education.splice(idx,1); renderEducation(); renderPreview();
+        });
+        list.appendChild(el);
+      });
+    }
+
+    /* ====== Optional Sections ====== */
+    $('#addProjBtn').addEventListener('click', ()=> addProject());
+    function addProject(p={ name:'', description:'' }){
+      state.cv.projects.push(p); renderProjects(); renderPreview();
+    }
+    function renderProjects(){
+      const list = $('#projList'); list.innerHTML='';
+      state.cv.projects.forEach((p, idx)=>{
+        const el = document.createElement('div'); el.className='item';
+        el.innerHTML=`
+          <div>
+            <label>Project name</label>
+            <input value="${escapeHtml(p.name)}" data-f="name">
+          </div>
+          <div>
+            <label>Description</label>
+            <input value="${escapeHtml(p.description)}" data-f="description">
+          </div>
+          <div class="row">
+            <button class="btn btn-danger" data-act="remove">Remove</button>
+          </div>
+        `;
+        el.querySelectorAll('input').forEach(inp=> inp.addEventListener('input',(e)=>{
+          const f=e.target.dataset.f; state.cv.projects[idx][f]=e.target.value; renderPreview();
+        }));
+        el.querySelector('[data-act="remove"]').addEventListener('click', ()=>{
+          state.cv.projects.splice(idx,1); renderProjects(); renderPreview();
+        });
+        list.appendChild(el);
+      });
+    }
+
+    $('#addCertBtn').addEventListener('click', ()=> addCert());
+    function addCert(c={ name:'', issuer:'', year:'' }){
+      state.cv.certifications.push(c); renderCerts(); renderPreview();
+    }
+    function renderCerts(){
+      const list = $('#certList'); list.innerHTML='';
+      state.cv.certifications.forEach((c, idx)=>{
+        const el = document.createElement('div'); el.className='item';
+        el.innerHTML=`
+          <div>
+            <label>Certification</label>
+            <input value="${escapeHtml(c.name)}" data-f="name">
+          </div>
+          <div>
+            <label>Issuer</label>
+            <input value="${escapeHtml(c.issuer)}" data-f="issuer">
+          </div>
+          <div>
+            <label>Year</label>
+            <input value="${escapeHtml(c.year)}" data-f="year">
+          </div>
+          <div class="row">
+            <button class="btn btn-danger" data-act="remove">Remove</button>
+          </div>
+        `;
+        el.querySelectorAll('input').forEach(inp=> inp.addEventListener('input',(e)=>{
+          const f=e.target.dataset.f; state.cv.certifications[idx][f]=e.target.value; renderPreview();
+        }));
+        el.querySelector('[data-act="remove"]').addEventListener('click', ()=>{
+          state.cv.certifications.splice(idx,1); renderCerts(); renderPreview();
+        });
+        list.appendChild(el);
+      });
+    }
+
+    $('#addLangBtn').addEventListener('click', ()=> addLang());
+    function addLang(l=''){
+      state.cv.languages.push(l); renderLangs(); renderPreview();
+    }
+    function renderLangs(){
+      const list = $('#langList'); list.innerHTML='';
+      state.cv.languages.forEach((l, idx)=>{
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML=`
+          <input value="${escapeHtml(l)}" />
+          <button class="btn btn-danger" data-i="${idx}">Remove</button>
+        `;
+        row.querySelector('input').addEventListener('input',(e)=>{
+          state.cv.languages[idx]=e.target.value; renderPreview();
+        });
+        row.querySelector('button').addEventListener('click',(e)=>{
+          const i=+e.target.dataset.i; state.cv.languages.splice(i,1); renderLangs(); renderPreview();
+        });
+        list.appendChild(row);
+      });
+    }
+
+    /* ====== Personal Inputs Bind ====== */
+    [['f_name','name'],['f_title','title'],['f_summary','summary'],['f_email','email'],['f_phone','phone'],['f_location','location'],['f_links','links']]
+      .forEach(([id, field])=>{
+        document.getElementById(id).addEventListener('input', (e)=>{
+          state.cv.personal[field] = e.target.value;
+          renderPreview();
+        });
+      });
+
+    /* ====== Smart AI (client-side heuristic) ====== */
+    const ACTION_VERBS = ['Led','Built','Implemented','Optimized','Automated','Designed','Launched','Improved','Streamlined','Delivered','Mentored','Analyzed','Reduced','Increased','Developed','Collaborated'];
+    const METRIC_HINTS = ['%','days','hours','ms','errors','cost','revenue','users'];
+
+    function extractKeywords(text){
+      text = (text||'').toLowerCase();
+      const words = text.match(/\b[a-z][a-z0-9\-\+\.]{2,}\b/g) || [];
+      const stop = new Set(['and','the','for','with','from','that','this','will','you','are','our','your','into','able','work','team','role','job','have','has','per','per','as','of','in','to','on','by','be','is']);
+      const freq = {};
+      words.forEach(w=>{
+        if(stop.has(w)) return;
+        freq[w] = (freq[w]||0)+1;
+      });
+      return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([w])=>w);
+    }
+
+    function generateSummaryFromJD(name, title, jd){
+      const kw = extractKeywords(jd);
+      const top = kw.slice(0,6).map(k=>k).join(', ');
+      return `${name?name+' — ':''}${title||'Professional'} with proven experience in ${top}. Focused on delivering measurable outcomes, aligning skills with the role, and communicating impact clearly.`;
+    }
+
+    function achievementBulletsFromJD(jd){
+      const kw = extractKeywords(jd);
+      const bullets = [];
+      for(let i=0;i<Math.min(5, kw.length); i++){
+        const verb = ACTION_VERBS[i % ACTION_VERBS.length];
+        const k = kw[i];
+        const metric = METRIC_HINTS[i % METRIC_HINTS.length];
+        bullets.push(`${verb} ${k}-related initiatives; achieved measurable improvements (${metric}).`);
+      }
+      return bullets;
+    }
+
+    function enhanceSkillsFromJD(skills, jd){
+      const kw = extractKeywords(jd);
+      const merged = new Set(skills.map(s=>s.toLowerCase()));
+      kw.slice(0,10).forEach(k=> merged.add(k));
+      return Array.from(merged).map(s=> s[0].toUpperCase()+s.slice(1));
+    }
+
+    /* ====== Apps Script proxy: call server-side AI (if configured) ====== */
+    async function callAiProxy(cv, jd){
+      if(!AI_PROXY_URL || AI_PROXY_URL.includes('AKfycbyM2cmcZQxr2V1KkK28sxXh3wTEOYXZPjoJwRyW8ZuUojWtOomx8rj0fRxycviUfvsY2Q/exec')) {
+        throw new Error('AI_PROXY_URL not configured. Paste your Apps Script web app URL into AI_PROXY_URL variable.');
+      }
+      const payload = { cv, jobDescription: jd };
+      const res = await fetch(AI_PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){
+        const text = await res.text().catch(()=>null);
+        throw new Error(`Proxy error ${res.status}: ${res.statusText} ${text||''}`);
+      }
+      // expect JSON response
+      return await res.json();
+    }
+
+    /* ====== AI buttons (generate + apply) ====== */
+    $('#aiGenerateBtn').addEventListener('click', async ()=>{
+      const jd = $('#jobDesc').value.trim();
+      const { name, title } = state.cv.personal;
+      if(!jd){ alert('Please paste a job description.'); return; }
+
+      // local heuristic immediate output (so user sees something while waiting)
+      const localSummary = generateSummaryFromJD(name, title, jd);
+      $('#aiSummaryOut').value = localSummary;
+      $('#aiBulletsOut').value = achievementBulletsFromJD(jd).join('\n');
+      $('#aiKeywordsOut').value = extractKeywords(jd).join(', ');
+
+      // try server-side AI proxy (Apps Script). If it fails, fall back to local heuristic.
+      try{
+        const result = await callAiProxy(state.cv, jd);
+        // expected shape: { summary, keywords, skills, experience_bullets, education_descriptions }
+        if(result.summary) { $('#aiSummaryOut').value = result.summary; state.cv.personal.summary = result.summary; $('#f_summary').value = result.summary; }
+        if(Array.isArray(result.keywords)) { $('#aiKeywordsOut').value = result.keywords.join(', '); }
+        if(Array.isArray(result.skills) && result.skills.length){
+          const merged = new Set(state.cv.skills.map(s=>s.trim()).filter(Boolean));
+          result.skills.forEach(s=> merged.add(s));
+          state.cv.skills = Array.from(merged);
+          renderSkills();
+        }
+        if(Array.isArray(result.experience_bullets)){
+          // map returned experience bullets to experiences (create missing entries)
+          for(let i=0; i<result.experience_bullets.length; i++){
+            if(!state.cv.experience[i]) addExperience({ role:'', company:'', start:'', end:'', bullets:[] });
+            state.cv.experience[i].bullets = result.experience_bullets[i].map(String);
+          }
+          renderExperience();
+        }
+        if(Array.isArray(result.education_descriptions)){
+          for(let i=0;i<result.education_descriptions.length;i++){
+            if(!state.cv.education[i]) addEducation({ degree:'', institution:'', year:'', details:'' });
+            state.cv.education[i].details = result.education_descriptions[i];
+          }
+          renderEducation();
+        }
+        renderPreview();
+      }catch(err){
+        console.warn('AI proxy error:', err);
+        // leave local heuristic output already applied; user can edit and apply
+        alert('generating information.');
+      }
+    });
+
+    $('#aiEnhanceSkillsBtn').addEventListener('click', async ()=>{
+      const jd = $('#jobDesc').value.trim();
+      if(!jd){ alert('Please paste a job description.'); return; }
+      // local enhancement first
+      state.cv.skills = enhanceSkillsFromJD(state.cv.skills, jd);
+      renderSkills(); renderPreview();
+
+      // optional server-side enhancement if available
+      try{
+        const result = await callAiProxy(state.cv, jd);
+        if(Array.isArray(result.skills) && result.skills.length){
+          const merged = new Set(state.cv.skills.map(s=>s.trim()).filter(Boolean));
+          result.skills.forEach(s=> merged.add(s));
+          state.cv.skills = Array.from(merged);
+          renderSkills(); renderPreview();
+        }
+      }catch(e){ console.warn('AI skills enhancement failed', e); }
+    });
+
+    // Apply AI outputs into current CV (user can edit before applying)
+    $('#aiSummaryOut').addEventListener('input', (e)=>{ state.cv.personal.summary = e.target.value; renderPreview(); });
+    $('#aiBulletsOut').addEventListener('input', (e)=>{
+      // Put bullets into the last experience entry if exists
+      if(state.cv.experience.length===0) addExperience();
+      const arr = e.target.value.split('\n').map(x=>x.trim()).filter(Boolean);
+      state.cv.experience[state.cv.experience.length-1].bullets = arr;
+      renderExperience(); renderPreview();
+    });
+
+    /* ====== Preview Renderer ====== */
+    function renderPreview(){
+      const p = state.cv.personal;
+      const skills = state.cv.skills;
+      const exp = state.cv.experience;
+      const edu = state.cv.education;
+      const projs = state.cv.projects;
+      const certs = state.cv.certifications;
+      const langs = state.cv.languages;
+      const contact = [p.email, p.phone, p.location, p.links].filter(Boolean).join(' • ');
+
+      const mkExp = exp.map(e=>`
+        <div class="section">
+          <strong>${escapeHtml(e.role||'')}</strong> — ${escapeHtml(e.company||'')}
+          <div class="muted">${escapeHtml([e.start,e.end].filter(Boolean).join(' - '))}</div>
+          <ul>${(e.bullets||[]).filter(Boolean).map(b=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>
+        </div>
+      `).join('');
+
+      const mkEdu = edu.map(e=>`
+        <div class="section">
+          <strong>${escapeHtml(e.degree||'')}</strong>, ${escapeHtml(e.institution||'')}
+          <div class="muted">${escapeHtml(e.year||'')}</div>
+          <div>${escapeHtml(e.details||'')}</div>
+        </div>
+      `).join('');
+
+      const mkProj = projs.length?`
+        <h3>Projects</h3>
+        ${projs.map(p=>`
+          <div class="section">
+            <strong>${escapeHtml(p.name||'')}</strong>
+            <div>${escapeHtml(p.description||'')}</div>
+          </div>
+        `).join('')}
+      `:'';
+
+      const mkCert = certs.length?`
+        <h3>Certifications</h3>
+        ${certs.map(c=>`
+          <div class="section">
+            <strong>${escapeHtml(c.name||'')}</strong> — ${escapeHtml(c.issuer||'')}
+            <div class="muted">${escapeHtml(c.year||'')}</div>
+          </div>
+        `).join('')}
+      `:'';
+
+      const mkLang = langs.length?`
+        <h3>Languages</h3>
+        <div>${langs.map(l=>escapeHtml(l)).join(' • ')}</div>
+      `:'';
+
+      $('#previewInner').innerHTML = `
+        ${state.template==='tpl-creative' ? `
+          <div class="header">
+            <div class="avatar"></div>
+            <div>
+              <div class="name">${escapeHtml(p.name||'Your Name')}</div>
+              <div class="title">${escapeHtml(p.title||'Professional Title')}</div>
+              <div class="muted">${escapeHtml(contact)}</div>
+            </div>
+          </div>
+        `:`
+          <div class="name">${escapeHtml(p.name||'Your Name')}</div>
+          <div class="title">${escapeHtml(p.title||'Professional Title')}</div>
+          <div class="muted">${escapeHtml(contact)}</div>
+        `}
+        ${p.summary?`<div class="section"><h3>Summary</h3><div>${escapeHtml(p.summary)}</div></div>`:''}
+        ${skills.length?`<div class="section"><h3>Skills</h3><div>${skills.map(s=>escapeHtml(s)).join(' • ')}</div></div>`:''}
+        ${mkExp?`<div class="section"><h3>Experience</h3>${mkExp}</div>`:''}
+        ${mkEdu?`<div class="section"><h3>Education</h3>${mkEdu}</div>`:''}
+        ${mkProj}
+        ${mkCert}
+        ${mkLang}
+      `;
+    }
+
+    function escapeHtml(str){
+      return String(str||'')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    /* ====== Save / Load / New ====== */
+    $('#saveCvBtn').addEventListener('click', ()=>{
+      const saved = LS.get(LS.cvsKey(state.user), []);
+      const cvCopy = JSON.parse(JSON.stringify(state.cv));
+      const id = Date.now();
+      saved.unshift({ id, name: state.cv.personal.name || 'Untitled CV', template: state.template, cv: cvCopy, ts:new Date().toISOString() });
+      LS.set(LS.cvsKey(state.user), saved);
+      renderSaved(saved);
+      alert('CV saved to dashboard.');
+    });
+
+    $('#newCvBtn').addEventListener('click', ()=>{
+      state.cv = { personal:{ name:'', title:'', summary:'', email:'', phone:'', location:'', links:'' }, skills:[], experience:[], education:[], projects:[], certifications:[], languages:[] };
+      renderSkills(); renderExperience(); renderEducation(); renderProjects(); renderCerts(); renderLangs(); renderPreview();
+    });
+
+    function renderSaved(list){
+      const wrap = $('#savedList'); wrap.innerHTML='';
+      if(!list || list.length===0){ wrap.innerHTML='<div class="muted">No saved CVs yet.</div>'; return;}
+      list.forEach(item=>{
+        const el = document.createElement('div'); el.className='item';
+        el.innerHTML = `
+          <div>
+            <label>Name</label>
+            <div class="chip">${escapeHtml(item.name)}</div>
+          </div>
+          <div>
+            <label>Template</label>
+            <div class="chip">${escapeHtml(item.template.replace('tpl-',''))}</div>
+          </div>
+          <div>
+            <label>Saved</label>
+            <div class="chip">${new Date(item.ts).toLocaleString()}</div>
+          </div>
+          <div class="row">
+            <button class="btn" data-act="load">Edit</button>
+            <button class="btn btn-primary" data-act="download">Download</button>
+            <button class="btn btn-danger" data-act="delete">Delete</button>
+          </div>
+        `;
+        el.querySelector('[data-act="load"]').addEventListener('click', ()=>{
+          state.cv = JSON.parse(JSON.stringify(item.cv));
+          setTemplate(item.template);
+          bindFormFromState();
+          renderPreview();
+          window.scrollTo({ top:0, behavior:'smooth' });
+        });
+        el.querySelector('[data-act="download"]').addEventListener('click', ()=>{
+          downloadAsPdf(item.cv, item.template, item.name);
+        });
+        el.querySelector('[data-act="delete"]').addEventListener('click', ()=>{
+          const arr = LS.get(LS.cvsKey(state.user), []);
+          const idx = arr.findIndex(x=>x.id===item.id);
+          if(idx>-1){ arr.splice(idx,1); LS.set(LS.cvsKey(state.user), arr); renderSaved(arr); }
+        });
+        wrap.appendChild(el);
+      });
+    }
+
+    function bindFormFromState(){
+      const p = state.cv.personal;
+      $('#f_name').value = p.name||'';
+      $('#f_title').value = p.title||'';
+      $('#f_summary').value = p.summary||'';
+      $('#f_email').value = p.email||'';
+      $('#f_phone').value = p.phone||'';
+      $('#f_location').value = p.location||'';
+      $('#f_links').value = p.links||'';
+      renderSkills(); renderExperience(); renderEducation(); renderProjects(); renderCerts(); renderLangs();
+    }
+
+    /* ====== PDF Download Implementation ====== */
+    function downloadAsPdf(cv, template, filename='resume'){
+      // Build HTML for print
+      const html = buildExportHtml(cv, template);
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank', 'width=800,height=900');
+      if (!printWindow) {
+        alert('Please allow popups to download PDF');
+        return;
+      }
+      
+      // Write content to the new window
+      printWindow.document.write(html);
+      printWindow.document.close();
+      
+      // Wait for content to load then trigger print
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.onafterprint = function() {
+            printWindow.close();
+            // Update download count
+            state.downloadCount++;
+            LS.set(LS.downloadsKey(state.user), state.downloadCount);
+            $('#downloadCount').textContent = state.downloadCount;
+          };
+        }, 500);
+      };
+    }
+
+    function buildExportHtml(cv, template) {
+      const safe = (s) => escapeHtml(s || '');
+      const contact = [cv.personal.email, cv.personal.phone, cv.personal.location, cv.personal.links].filter(Boolean).join(' • ');
+      
+      // Build sections
+      const mk = {
+        skills: cv.skills.length ? `
+          <div class="section">
+            <h3>Skills</h3>
+            <div>${cv.skills.map(safe).join(' • ')}</div>
+          </div>
+        ` : '',
+        
+        exp: cv.experience.map(e => `
+          <div class="section">
+            <strong>${safe(e.role)}</strong> — ${safe(e.company)}
+            <div class="muted">${safe([e.start, e.end].filter(Boolean).join(' - '))}</div>
+            <ul>${(e.bullets || []).filter(Boolean).map(b => `<li>${safe(b)}</li>`).join('')}</ul>
+          </div>
+        `).join(''),
+        
+        edu: cv.education.map(e => `
+          <div class="section">
+            <strong>${safe(e.degree)}</strong>, ${safe(e.institution)}
+            <div class="muted">${safe(e.year)}</div>
+            <div>${safe(e.details)}</div>
+          </div>
+        `).join(''),
+        
+        proj: cv.projects.length ? `
+          <h3>Projects</h3>
+          ${cv.projects.map(p => `
+            <div class="section">
+              <strong>${safe(p.name)}</strong>
+              <div>${safe(p.description)}</div>
+            </div>
+          `).join('')}
+        ` : '',
+        
+        cert: cv.certifications.length ? `
+          <h3>Certifications</h3>
+          ${cv.certifications.map(c => `
+            <div class="section">
+              <strong>${safe(c.name)}</strong> — ${safe(c.issuer)}
+              <div class="muted">${safe(c.year)}</div>
+            </div>
+          `).join('')}
+        ` : '',
+        
+        lang: cv.languages.length ? `
+          <h3>Languages</h3>
+          <div>${cv.languages.map(safe).join(' • ')}</div>
+        ` : ''
+      };
+      
+      // Template-specific header
+      const header = template === 'tpl-creative' 
+        ? `
+          <div class="header">
+            <div class="avatar"></div>
+            <div>
+              <div class="name">${safe(cv.personal.name || 'Your Name')}</div>
+              <div class="title">${safe(cv.personal.title || 'Professional Title')}</div>
+              <div class="muted">${safe(contact)}</div>
+            </div>
+          </div>
+        `
+        : `
+          <div>
+            <div class="name">${safe(cv.personal.name || 'Your Name')}</div>
+            <div class="title">${safe(cv.personal.title || 'Professional Title')}</div>
+            <div class="muted">${safe(contact)}</div>
+          </div>
+        `;
+      
+      // Print-specific CSS
+      const printCss = `
+        <style>
+          @media print {
+            @page { 
+              size: A4; 
+              margin: 0.5in; 
+            }
+            body { 
+              font-family: Arial, sans-serif; 
+              color: #000; 
+              background: #fff; 
+              margin: 0; 
+              padding: 0;
+              font-size: 12pt;
+              line-height: 1.4;
+            }
+            .preview { 
+              background: #fff; 
+              border: none; 
+              box-shadow: none; 
+            }
+            .preview-inner { 
+              padding: 0; 
+            }
+            .name { 
+              font-size: 24pt; 
+              font-weight: 700; 
+              margin-bottom: 4pt; 
+            }
+            .title { 
+              font-size: 14pt; 
+              color: #555; 
+              margin-bottom: 8pt; 
+            }
+            .muted { 
+              color: #666; 
+              font-size: 10pt; 
+              margin-bottom: 12pt; 
+            }
+            h3 { 
+              margin: 16pt 0 8pt 0; 
+              border-bottom: 1px solid #ddd; 
+              padding-bottom: 4pt; 
+              font-size: 14pt; 
+              page-break-after: avoid;
+            }
+            .section { 
+              margin-bottom: 10pt; 
+              page-break-inside: avoid;
+            }
+            ul { 
+              padding-left: 20pt; 
+              margin: 6pt 0; 
+            }
+            li { 
+              margin-bottom: 4pt; 
+            }
+            strong { 
+              font-weight: 600; 
+            }
+            .header { 
+              display: flex; 
+              align-items: center; 
+              gap: 12pt; 
+              margin-bottom: 12pt; 
+            }
+            .avatar { 
+              width: 50pt; 
+              height: 50pt; 
+              border-radius: 50%; 
+              background: linear-gradient(135deg, #9b7dff, #6bc2ff); 
+            }
+            a { 
+              color: #000; 
+              text-decoration: none; 
+            }
+          }
+          
+          @media screen {
+            body { 
+              font-family: Arial, sans-serif; 
+              color: #000; 
+              background: #fff; 
+              margin: 0.5in; 
+              padding: 0;
+              font-size: 12pt;
+              line-height: 1.4;
+            }
+            .preview { 
+              background: #fff; 
+              border: none; 
+              box-shadow: none; 
+            }
+            .preview-inner { 
+              padding: 0; 
+            }
+            .name { 
+              font-size: 24pt; 
+              font-weight: 700; 
+              margin-bottom: 4pt; 
+            }
+            .title { 
+              font-size: 14pt; 
+              color: #555; 
+              margin-bottom: 8pt; 
+            }
+            .muted { 
+              color: #666; 
+              font-size: 10pt; 
+              margin-bottom: 12pt; 
+            }
+            h3 { 
+              margin: 16pt 0 8pt 0; 
+              border-bottom: 1px solid #ddd; 
+              padding-bottom: 4pt; 
+              font-size: 14pt; 
+            }
+            .section { 
+              margin-bottom: 10pt; 
+            }
+            ul { 
+              padding-left: 20pt; 
+              margin: 6pt 0; 
+            }
+            li { 
+              margin-bottom: 4pt; 
+            }
+            strong { 
+              font-weight: 600; 
+            }
+            .header { 
+              display: flex; 
+              align-items: center; 
+              gap: 12pt; 
+              margin-bottom: 12pt; 
+            }
+            .avatar { 
+              width: 50pt; 
+              height: 50pt; 
+              border-radius: 50%; 
+              background: linear-gradient(135deg, #9b7dff, #6bc2ff); 
+            }
+            a { 
+              color: #000; 
+              text-decoration: none; 
+            }
+          }
+        </style>
+      `;
+      
+      return `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${safe(cv.personal.name || 'Resume')}</title>
+            ${printCss}
+          </head>
+          <body>
+            <div class="preview ${template}">
+              <div class="preview-inner">
+                ${header}
+                ${cv.personal.summary ? `
+                  <div class="section">
+                    <h3>Summary</h3>
+                    <div>${safe(cv.personal.summary)}</div>
+                  </div>
+                ` : ''}
+                ${mk.skills}
+                ${mk.exp ? `
+                  <div class="section">
+                    <h3>Experience</h3>
+                    ${mk.exp}
+                  </div>
+                ` : ''}
+                ${mk.edu ? `
+                  <div class="section">
+                    <h3>Education</h3>
+                    ${mk.edu}
+                  </div>
+                ` : ''}
+                ${mk.proj}
+                ${mk.cert}
+                ${mk.lang}
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+    }
+
+    // Wire up the main download button
+    $('#downloadCvBtn').addEventListener('click', () => {
+      downloadAsPdf(state.cv, state.template, state.cv.personal.name || 'resume');
+    });
+
+    /* ====== Init ====== */
+    initAuth();
+    renderPreview();
+  </script>
+</body>
+</html>
